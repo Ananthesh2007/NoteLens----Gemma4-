@@ -1,8 +1,33 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 
-export default function ImageUpload({ onFileSelect, selectedFile, error, onError }) {
+export default function ImageUpload({
+  onFileSelect,
+  selectedFile,
+  onClearFile,
+  onGenerate,
+  isGenerating,
+  onError
+}) {
   const [isDragging, setIsDragging] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState(null)
   const fileInputRef = useRef(null)
+
+  // Max 10MB file limit
+  const MAX_FILE_SIZE = 10 * 1024 * 1024
+
+  useEffect(() => {
+    if (!selectedFile) {
+      setPreviewUrl(null)
+      return
+    }
+
+    const objectUrl = URL.createObjectURL(selectedFile)
+    setPreviewUrl(objectUrl)
+
+    return () => {
+      URL.revokeObjectURL(objectUrl)
+    }
+  }, [selectedFile])
 
   const handleDragOver = (e) => {
     e.preventDefault()
@@ -17,9 +42,15 @@ export default function ImageUpload({ onFileSelect, selectedFile, error, onError
   const validateAndSelect = (file) => {
     if (!file) return
 
-    // Validate mime type
+    // Validate MIME type
     if (!file.type.startsWith('image/')) {
-      if (onError) onError('Please upload a valid image file (PNG, JPG, JPEG, WEBP).')
+      if (onError) onError('Invalid file format. Please upload a PNG, JPG, JPEG, or WEBP image.')
+      return
+    }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      if (onError) onError('File is too large. Maximum allowed size is 10MB.')
       return
     }
 
@@ -47,38 +78,84 @@ export default function ImageUpload({ onFileSelect, selectedFile, error, onError
   }
 
   return (
-    <div className="upload-section">
-      <div
-        className={`upload-dropzone ${isDragging ? 'dragging' : ''} ${selectedFile ? 'has-file' : ''}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={handleClickUploadArea}
-      >
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileInputChange}
-          accept="image/png, image/jpeg, image/jpg, image/webp"
-          style={{ display: 'none' }}
-        />
+    <div className="upload-container">
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileInputChange}
+        accept="image/png, image/jpeg, image/jpg, image/webp"
+        style={{ display: 'none' }}
+      />
 
-        <div className="upload-content">
-          <div className="upload-icon">📷</div>
-          <h3 className="upload-title">
-            {selectedFile ? 'Change selected image' : 'Upload your study notes'}
-          </h3>
-          <p className="upload-subtitle">
-            Drag & drop your notes image here, or <span className="browse-link">browse files</span>
-          </p>
-          <p className="upload-hint">Supports PNG, JPG, JPEG, WEBP (Handwritten or Printed)</p>
-          {selectedFile && (
-            <p className="selected-filename">
-              Selected: <strong>{selectedFile.name}</strong> ({(selectedFile.size / 1024).toFixed(1)} KB)
+      {!selectedFile ? (
+        /* Empty Upload Zone */
+        <div
+          className={`upload-dropzone ${isDragging ? 'dragging' : ''}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={handleClickUploadArea}
+        >
+          <div className="upload-content">
+            <div className="upload-icon">📸</div>
+            <h3 className="upload-title">Upload your study notes</h3>
+            <p className="upload-subtitle">
+              Drag & drop your notes here, or <span className="browse-link">browse files</span>
             </p>
-          )}
+            <p className="upload-hint">Supports PNG, JPG, JPEG, WEBP up to 10MB</p>
+          </div>
         </div>
-      </div>
+      ) : (
+        /* Image Preview & Actions Area */
+        <div className="preview-container">
+          <div className="preview-header">
+            <div className="preview-meta">
+              <span className="file-badge">Image Ready</span>
+              <span className="file-name">{selectedFile.name}</span>
+              <span className="file-size">({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)</span>
+            </div>
+            <button
+              type="button"
+              className="btn-text-danger"
+              onClick={onClearFile}
+              disabled={isGenerating}
+              title="Remove image"
+            >
+              ✕ Remove
+            </button>
+          </div>
+
+          <div className="preview-image-wrapper">
+            <img src={previewUrl} alt="Notes preview" className="preview-image" />
+          </div>
+
+          <div className="preview-actions">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={handleClickUploadArea}
+              disabled={isGenerating}
+            >
+              🔄 Change Image
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary btn-generate"
+              onClick={onGenerate}
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <>
+                  <span className="spinner-sm"></span> Analysing Notes...
+                </>
+              ) : (
+                <>✨ Generate Study Material</>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
