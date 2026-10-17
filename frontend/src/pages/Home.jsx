@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import ImageUpload from '../components/ImageUpload'
 import LoadingIndicator from '../components/LoadingIndicator'
 import ErrorMessage from '../components/ErrorMessage'
+import { analyseNotes } from '../services/api'
 
 export default function Home({ onAnalysisComplete }) {
   const [selectedFile, setSelectedFile] = useState(null)
@@ -32,47 +33,14 @@ export default function Home({ onAnalysisComplete }) {
     setError(null)
 
     try {
-      // Simulated generation delay (will connect to backend api.js in Member 3 timetable)
-      setTimeout(() => {
-        setIsGenerating(false)
-        if (onAnalysisComplete) {
-          onAnalysisComplete({
-            explanation: 'These study notes outline foundational concepts. Key principles are clearly highlighted with logical structure, making revision straightforward. The notes focus on theoretical definitions and their practical applications.',
-            summary: 'The uploaded notes cover core definitions, fundamental formulas, and exam-focused takeaways structured for rapid review.',
-            important_points: [
-              'Core principle: Every system maintains equilibrium under standard conditions.',
-              'Fundamental equation: Ensure variables are normalized before calculation.',
-              'Critical theorem: Boundary conditions must be evaluated at state transitions.',
-              'Exam tip: Always verify units and state assumptions explicitly.'
-            ],
-            questions: [
-              {
-                question: 'What is the primary condition required to maintain equilibrium in the system?',
-                answer: 'Standard state conditions must be maintained continuously.'
-              },
-              {
-                question: 'Why must variables be normalized prior to applying the fundamental equation?',
-                answer: 'To prevent dimensional inconsistencies across varying scale factors.'
-              },
-              {
-                question: 'At which point should the boundary conditions be evaluated?',
-                answer: 'At state transitions during the dynamic process.'
-              },
-              {
-                question: 'What is the most crucial verification step recommended for exams?',
-                answer: 'Verifying measurement units and clearly noting state assumptions.'
-              },
-              {
-                question: 'How do theoretical definitions map to real-world applications in this context?',
-                answer: 'They establish mathematical bounds that govern physical system behaviors.'
-              }
-            ]
-          })
-        }
-      }, 2500)
+      const studyData = await analyseNotes(selectedFile)
+      setIsGenerating(false)
+      if (onAnalysisComplete) {
+        onAnalysisComplete(studyData)
+      }
     } catch (err) {
       setIsGenerating(false)
-      setError('Failed to reach backend server. Please verify FastAPI is running on port 8000.')
+      setError(err.message || 'Failed to generate study material. Please verify FastAPI and Ollama are running.')
     }
   }
 

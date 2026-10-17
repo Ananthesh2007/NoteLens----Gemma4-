@@ -4,9 +4,14 @@
 
 This file is the complete project plan for NoteLens. Read all of it before writing code.
 
+**Mandatory first step:** Before inspecting, creating, or changing project files, ask me: “Where is your NoteLens project folder located?” Wait for my answer. Use the exact folder path I provide. Do not assume the current working directory or create a second project elsewhere. Then inspect the existing files and adapt them instead of overwriting working code.
+
 - Build exactly what the plan describes: two screens, one upload endpoint, AI-generated study material.
 - Priority: get image upload → backend → AI → results working end to end before adding anything else.
-- Never put the API key in frontend code. Keep it in `backend/.env`, exclude `.env` from Git, and maintain `.env.example`.
+- Run the required AI model locally through Ollama: `gemma4:e4b`. Do not use a cloud AI API or require an AI API key.
+- Keep the Ollama base URL configurable on the backend, defaulting to `http://localhost:11434`. Never expose backend configuration or private secrets in frontend code.
+- Before changing code, ask for the NoteLens project folder location and inspect its existing structure.
+- Never put secrets in frontend code. If any other secret is ever needed, keep it in `backend/.env`, exclude `.env` from Git, and maintain `.env.example`.
 - No login, payments, databases, user profiles, voice features, or complex dashboards.
 - Show errors visibly: invalid file, oversized file, API failure, unreadable image.
 - Keep code simple and readable. This is a six-hour MVP.
@@ -45,12 +50,12 @@ Commands:
 |---|---|
 | **Frontend** | React, HTML, CSS, JavaScript |
 | **Backend** | Python, FastAPI |
-| **AI** | Multimodal model/API permitted by the hackathon |
+| **AI** | Gemma 4 E4B running locally through Ollama (`gemma4:e4b`) |
 | **API connection** | HTTP requests |
 | **Editor** | Visual Studio Code |
 | **Version control** | Git and GitHub |
 
-> **Important:** Confirm access to the required AI model/API at the beginning. Test the selected model before relying on it.
+> **Required local setup:** Windows 11 laptop, 16 GB RAM, NVIDIA GPU, Ollama for Windows, and the locally downloaded `gemma4:e4b` model. Verify that the exact model tag exists in the local Ollama installation before coding against it. If the tag is unavailable, stop and ask me before substituting another model. Do not silently switch to a cloud API.
 
 ## 3. Complete Folder Structure
 
@@ -84,7 +89,7 @@ NoteLens/
 │   │   │   ├── model.py
 │   │   │   └── prompts.py
 │   │   └── services/
-│   │   │   └── image_processing.py
+│   │       └── image_processing.py
 │   ├── requirements.txt
 │   ├── .env
 │   └── .env.example
@@ -121,7 +126,9 @@ Keep the application to two main screens. Login, payments, databases and user pr
 - Node.js: https://nodejs.org/
 - Python: https://www.python.org/downloads/
 - Git: https://git-scm.com/downloads/
-- Create or verify GitHub access and access to the permitted AI API.
+- Install Ollama for Windows: https://ollama.com/download/windows
+- In PowerShell, download the required model with `ollama pull gemma4:e4b`, then test it with `ollama run gemma4:e4b`.
+- Verify the model is installed with `ollama list` and that Ollama responds locally before integrating it. Do not download or install software without asking me first if elevated permissions or additional choices are required.
 
 ### Step 2 — Create the frontend
 
@@ -199,9 +206,9 @@ The backend documentation is normally available at http://127.0.0.1:8000/docs.
 
 **Responsibility:** Model/API access, prompts and AI-generated study material.
 
-- 9:15–9:35 — Confirm AI API access and test one request.
+- 9:15–9:35 — Verify Ollama is installed, running, and the local `gemma4:e4b` model is available; test one local request.
 - 9:35–10:15 — Prepare prompts for explanations and summaries.
-- 10:15–11:00 — Connect the model to the backend.
+- 10:15–11:00 — Connect the local Ollama model to the backend.
 - 11:00–11:45 — Generate explanations, summaries and important points.
 - 11:45–12:15 — Generate five questions with answers.
 - 12:15–12:45 — Improve prompts and handle unclear images.
@@ -274,7 +281,11 @@ Instructions:
 - Handle API failures and unclear images.
 - Return structured study material to the frontend.
 
-> **Security:** Store the API key in `backend/.env` and exclude `.env` from `.gitignore`. Never put a private API key in frontend code.
+> **Local-model requirement:** The backend must call the Ollama API at `http://localhost:11434` by default and use model name `gemma4:e4b`. Configure the URL/model through backend environment variables if helpful (for example, `OLLAMA_BASE_URL` and `OLLAMA_MODEL`). Do not require a cloud API key. Never call Ollama directly from browser code; only the FastAPI backend should call it.
+
+- Confirm the model supports image input. Send the uploaded image to Ollama using its supported image-input format; do not silently send only the filename or image path.
+- Use a reasonable request timeout and return a clear error if Ollama is not running, the model is missing, or the image cannot be analysed.
+- Add a health/status check or startup diagnostic that explains how to start Ollama and pull the model. Do not automatically download a large model when the website starts.
 
 ## 11. Final Testing Checklist
 
@@ -288,6 +299,9 @@ Instructions:
 - [ ] Five questions and answers are displayed
 - [ ] Loading state works
 - [ ] Invalid image displays an error
+- [ ] Ollama/model unavailable displays a clear setup error
+- [ ] Uploaded image is passed to the local multimodal model
+- [ ] No cloud AI API key is required
 - [ ] API failure displays an error
 - [ ] API key is not exposed in frontend
 - [ ] `.env` is excluded from Git
@@ -317,3 +331,28 @@ Instructions:
 ## Priority Rule
 
 Make the image-upload-to-AI-results flow work before adding extra features. Avoid login, databases, payment features, voice features and complex dashboards during the six-hour build.
+
+
+## 14. Mandatory Claude Code Workflow and Local Gemma Setup
+
+Follow this workflow in order. Do not skip the first question.
+
+1. **Ask me where the project is located.** Your first reply must be: “Where is your NoteLens project folder located? Please paste the full path (for example, `C:\Users\YourName\Documents\NoteLens`).” Wait for my answer before accessing or changing project files.
+2. After I provide the path, inspect that folder and its existing files. Summarise what is already present, identify the frontend/backend frameworks, and make a brief implementation plan. Do not overwrite existing work unnecessarily.
+3. Ask me to confirm Ollama and `gemma4:e4b` are installed, or guide me through installation if they are not. I will install the required software/model myself. Do not assume installation has succeeded; verify using `ollama --version`, `ollama list`, and a small test request when possible.
+4. Use **only local Gemma 4 E4B through Ollama** for AI inference. Default model name: `gemma4:e4b`. Default local API base URL: `http://localhost:11434`. No cloud AI provider, API key, or fallback model unless I explicitly approve a change.
+5. Before implementing image analysis, verify the installed model tag and that the model supports image input. If the model is missing, unavailable, or lacks vision/image-input support, stop and tell me the exact issue; do not silently switch models.
+6. Build and integrate the complete NoteLens flow in the project folder I specified: image upload and preview → FastAPI backend → local Ollama/Gemma image analysis → explanation, summary, important points, and five questions with answers.
+7. Add clear setup instructions for Windows 11 and commands to start the frontend and backend. Keep the Ollama server/model separate from the website processes. Never embed machine-specific absolute paths in source code.
+8. Run available tests and fix implementation errors. Clearly distinguish tests actually run from tests I still need to run. Do not claim the project works unless verified.
+9. At the end, report changed files, exact commands to run from the project directory, the local model used, and any remaining manual steps.
+
+### Local Ollama configuration
+
+- Default model: `gemma4:e4b`
+- Default base URL: `http://localhost:11434`
+- Suggested backend environment settings: `OLLAMA_BASE_URL=http://localhost:11434` and `OLLAMA_MODEL=gemma4:e4b`
+- The app must remain usable without an external AI account or cloud API key.
+- Validate image type and size on the backend. Handle unsupported image input, unreadable notes, Ollama not running, missing model, timeout, and malformed model output with user-friendly errors.
+- Parse and validate the model response before returning structured JSON to the frontend.
+- Never expose local filesystem paths, stack traces, or internal secrets in user-facing errors.
