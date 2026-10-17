@@ -2,6 +2,7 @@ import React from 'react'
 import SummaryCard from '../components/SummaryCard'
 import ExplanationCard from '../components/ExplanationCard'
 import KeyPointsCard from '../components/KeyPointsCard'
+import QuizCard from '../components/QuizCard'
 
 export default function Results({ data, onBack }) {
   if (!data) {
@@ -40,7 +41,8 @@ export default function Results({ data, onBack }) {
         {/* Important Points & Definitions Card */}
         {data.important_points && <KeyPointsCard points={data.important_points} />}
 
-        {/* Practice Quiz will be integrated in Slot 11:45–12:15 */}
+        {/* Practice Quiz Card */}
+        {data.questions && <QuizCard questions={data.questions} />}
       </div>
     </div>
   )
